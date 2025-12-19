@@ -51,7 +51,7 @@ java -jar target/sherlock-java.jar <username>
 ```
 Contoh:
 ```bash
-java -jar target/sherlock-java.jar mdhiyaulatha
+java -jar target/sherlock-java.jar Bangkah
 ```
 
 ### 4. Output
@@ -89,5 +89,3 @@ java -jar target/sherlock-java.jar mdhiyaulatha
    cat hasil/hasil_pencarian_davis.txt
    ```
 
-## Lisensi
-MIT License. Lihat file LICENSE untuk detail.
