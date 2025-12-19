@@ -1,6 +1,5 @@
 # sherlock-java
 
-Minified Java version dari [Sherlock Project](https://github.com/sherlock-project/sherlock).
 Aplikasi ini digunakan untuk mencari keberadaan sebuah username di ratusan situs sosial media secara otomatis dan cepat.
 
 ## Fitur Utama
