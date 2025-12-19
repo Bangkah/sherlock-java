@@ -25,7 +25,6 @@ import java.util.Random;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.regex.Pattern;
-// ...existing code...
 
 /**
  * Minified version of sherlock-project
@@ -39,27 +38,27 @@ public class App {
          * Legacy method for unit test compatibility
          */
         public static CompletableFuture<HttpResponse<String>> doSearch(String username, String uri) {
-        String finalUri = uri.replace("%", username);
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(finalUri))
-            .header("User-Agent", USERAGENT)
-            .timeout(Duration.ofMillis(3000))
-            .GET()
-            .build();
-        return HttpClient.newHttpClient()
-            .sendAsync(request, HttpResponse.BodyHandlers.ofString());
+    String finalUri = uri.replace("%", username);
+    HttpRequest request = HttpRequest.newBuilder()
+        .uri(URI.create(finalUri))
+        .header("User-Agent", USERAGENT)
+        .timeout(Duration.ofMillis(3000))
+        .GET()
+        .build();
+    return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
         }
     static final AtomicInteger FOUND = new AtomicInteger(0);
     static final AtomicInteger NOTFOUND = new AtomicInteger(0);
     private static final Gson gson = new Gson();
     private static final ExecutorService executor = Executors.newWorkStealingPool();
+    private static final HttpClient httpClient = buildHttpClientWithProxy();
     private static final String USERAGENT = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.2 (KHTML, like Gecko) Chrome/22.0.1216.0 Safari/537.2";
     private static final Pattern USERNAME_REGEX = Pattern.compile("^[a-zA-Z0-9_-]{2,}$");
     private static final PrintWriter pw = new PrintWriter(System.out);
-    private static final StringBuilder foundList = new StringBuilder();
-    private static final StringBuilder notFoundList = new StringBuilder();
-    private static final StringBuilder failedList = new StringBuilder();
-    private static final Map<String, Double> confidenceMap = new HashMap<>();
+    public static final StringBuilder foundList = new StringBuilder();
+    public static final StringBuilder notFoundList = new StringBuilder();
+    public static final StringBuilder failedList = new StringBuilder();
+    public static final Map<String, Double> confidenceMap = new HashMap<>();
     private static final List<Map<String, Object>> jsonResults = new java.util.ArrayList<>();
 
     public static void main(String[] args) throws Exception {
@@ -180,16 +179,15 @@ public class App {
      * @return response "Promise"
      */
     public static CompletableFuture<Void> doSearchWithFingerprint(String username, Website website) {
-        String finalUri = website.getUrl().replace("%", username);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(finalUri))
-                .header("User-Agent", USERAGENT)
-                .timeout(Duration.ofMillis(3000))
-                .GET()
-                .build();
-        return HttpClient.newHttpClient()
-                .sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenAcceptAsync(response -> {
+    String finalUri = website.getUrl().replace("%", username);
+    HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(finalUri))
+            .header("User-Agent", USERAGENT)
+            .timeout(Duration.ofMillis(3000))
+            .GET()
+            .build();
+    return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            .thenAcceptAsync(response -> {
                     int status = response.statusCode();
                     double confidence = 0.0;
                     boolean found = false;
@@ -227,6 +225,27 @@ public class App {
                     resultRow.put("category", category);
                     jsonResults.add(resultRow);
                 }, executor);
+    }
+
+    /**
+     * Build HttpClient with proxy support (manual via env HTTP_PROXY or system property)
+     */
+    private static HttpClient buildHttpClientWithProxy() {
+        String proxyUrl = System.getenv("HTTP_PROXY");
+        if (proxyUrl == null || proxyUrl.isEmpty()) {
+            proxyUrl = System.getProperty("http.proxy");
+        }
+        if (proxyUrl != null && !proxyUrl.isEmpty()) {
+            try {
+                java.net.URI proxyUri = new java.net.URI(proxyUrl);
+                java.net.ProxySelector proxySelector = java.net.ProxySelector.of(
+                        new java.net.InetSocketAddress(proxyUri.getHost(), proxyUri.getPort()));
+                return HttpClient.newBuilder().proxy(proxySelector).build();
+            } catch (Exception e) {
+                System.err.println("Proxy parse error: " + e.getMessage());
+            }
+        }
+        return HttpClient.newBuilder().build();
     }
 
     /**
